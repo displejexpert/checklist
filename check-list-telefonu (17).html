@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Check list telefonu</title>
+<style>
+  :root{
+    --modra:#1F4E78;
+    --modra-svetla:#D9E1F2;
+    --android:#2E7D32;
+    --android-svetla:#C8E6C9;
+    --ram:#000;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family:Arial,"Segoe UI",sans-serif;
+    margin:0;padding:24px;
+    background:#f4f6f9;color:#111;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+  .wrap{max-width:900px;margin:0 auto;}
+
+  /* === PŘEPÍNAČ === */
+  .switcher{
+    display:flex;gap:0;margin-bottom:20px;
+    border:2px solid var(--ram);border-radius:8px;overflow:hidden;
+    width:fit-content;
+  }
+  .switcher button{
+    font-size:16px;font-weight:bold;cursor:pointer;
+    border:none;padding:12px 32px;
+    background:#e0e0e0;color:#555;transition:all .2s;
+  }
+  .switcher button.active-iphone{background:var(--modra);color:#fff;}
+  .switcher button.active-android{background:var(--android);color:#fff;}
+  .switcher button.active-hodinky{background:#6a1b9a;color:#fff;}
+
+  .toolbar{
+    display:flex;flex-wrap:wrap;gap:8px;
+    margin-bottom:20px;align-items:center;
+  }
+  .toolbar button{
+    font-size:14px;font-weight:bold;cursor:pointer;
+    border:none;border-radius:6px;padding:10px 16px;
+    color:#fff;background:var(--modra);transition:opacity .15s;
+  }
+  .toolbar button:hover{opacity:.85;}
+  .toolbar button.sec{background:#5a6b7b;}
+  .toolbar .spacer{flex:1;}
+
+  .sheet{
+    background:#fff;border:2px solid var(--ram);
+    box-shadow:0 2px 12px rgba(0,0,0,.08);
+  }
+  h1.title{
+    margin:0;padding:12px;font-size:22px;text-align:center;
+    border-bottom:2px solid var(--ram);
+  }
+  .badge{
+    display:inline-block;padding:2px 10px;border-radius:12px;
+    font-size:14px;margin-left:10px;vertical-align:middle;
+  }
+  .badge-iphone{background:var(--modra);color:#fff;}
+  .badge-android{background:var(--android);color:#fff;}
+  .badge-hodinky{background:#6a1b9a;color:#fff;}
+
+  table{width:100%;border-collapse:collapse;}
+  td,th{border:1px solid var(--ram);padding:6px 8px;font-size:14px;vertical-align:middle;}
+  .lbl{width:42%;font-weight:bold;background:#fff;}
+  .lbl.right-medium{border-right:2px solid var(--ram);}
+  tr.section td{
+    font-weight:bold;font-size:15px;text-align:left;padding:8px 10px;
+  }
+  tr.section.sec-general td{background:var(--modra);color:#fff;}
+  tr.section.sec-iphone td{background:#1a3d5c;color:#fff;}
+  tr.section.sec-android td{background:var(--android);color:#fff;}
+
+  tr.status th{
+    background:var(--modra-svetla);color:#000;font-weight:bold;
+    text-align:center;font-size:13px;
+  }
+  tr.status.android-status th{background:var(--android-svetla);}
+
+  .meta td{font-weight:bold;}
+  input[type="text"]{
+    width:100%;border:none;border-bottom:1px dotted #888;
+    font-size:14px;padding:3px 2px;font-family:inherit;background:transparent;
+  }
+  input[type="text"]:focus{outline:none;border-bottom:1.5px solid var(--modra);background:#fafcff;}
+  .opts{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+  .opts label{display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap;}
+  input[type="radio"],input[type="checkbox"]{width:16px;height:16px;cursor:pointer;accent-color:var(--modra);}
+  .center{text-align:center;}
+  .note-area{width:100%;min-height:70px;border:none;font-size:14px;font-family:inherit;padding:6px;resize:vertical;}
+  .note-area:focus{outline:none;background:#fafcff;}
+
+  /* === VIDITELNOST === */
+  .only-iphone{display:none;}
+  .only-android{display:none;}
+  .only-hodinky{display:none;}
+  body.mode-iphone .only-iphone{display:table-row;}
+  body.mode-android .only-android{display:table-row;}
+  body.mode-hodinky .only-hodinky{display:table-row;}
+  body.mode-iphone tr.section.sec-iphone{display:table-row;}
+  body.mode-android tr.section.sec-android{display:table-row;}
+  tr.section.sec-iphone{display:none;}
+  tr.section.sec-android{display:none;}
+  /* section řádky s only-* třídami */
+  tr.section.only-iphone{display:none;}
+  tr.section.only-android{display:none;}
+  body.mode-iphone tr.section.only-iphone{display:table-row;}
+  body.mode-android tr.section.only-android{display:table-row;}
+  /* status řádky podmíněné */
+  .only-iphone.status-row{display:none;}
+  body.mode-iphone .only-iphone.status-row{display:table-row;}
+  .only-android.status-row{display:none;}
+  body.mode-android .only-android.status-row{display:table-row;}
+  /* status (th) řádky s only-* */
+  tr.status.only-iphone{display:none;}
+  tr.status.only-android{display:none;}
+  body.mode-iphone tr.status.only-iphone{display:table-row;}
+  body.mode-android tr.status.only-android{display:table-row;}
+  /* hodinky — skrýt telefon sekce */
+  body.mode-hodinky .phone-only{display:none;}
+  body.mode-hodinky .only-hodinky{display:table-row;}
+  .hodinky-sheet{display:none;}
+  body.mode-hodinky .hodinky-sheet{display:table-row;}
+  /* v režimu hodinky skrýt vše co není hodinky-sheet ani meta hodinky */
+  body.mode-hodinky tr:not(.hodinky-sheet){display:none;}
+  body.mode-hodinky tr.hodinky-sheet{display:table-row !important;}
+
+  @page{
+    size: A4 portrait;
+    margin: 8mm;
+  }
+  /* Pre-print třída — identická s @media print, slouží pro měření výšky před tiskem */
+  .pre-print .toolbar, .pre-print .switcher{display:none !important;}
+  .pre-print td,.pre-print th{font-size:8pt !important;padding:2px 4px !important;line-height:1.2 !important;vertical-align:middle !important;}
+  .pre-print h1.title{font-size:10pt !important;padding:4px !important;}
+  .pre-print .badge{font-size:7pt !important;}
+  .pre-print tr.section td{font-size:8.5pt !important;padding:3px 6px !important;}
+  .pre-print tr.status th{font-size:7.5pt !important;padding:2px 3px !important;}
+  .pre-print .meta td{font-size:8pt !important;padding:2px 4px !important;}
+  .pre-print .note-area{min-height:0 !important;height:32px !important;}
+  .pre-print [data-k="h_poznamka_mp"]{height:48px !important;}
+  .pre-print input[type="radio"],.pre-print input[type="checkbox"]{width:11px !important;height:11px !important;}
+  @media print{
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+    html,body{margin:0;padding:0;background:#fff;}
+    .toolbar,.switcher{display:none !important;}
+    .wrap{max-width:none;margin:0;padding:0;}
+    .sheet{border:1px solid #000;box-shadow:none;}
+    td,th{font-size:8pt;padding:2px 4px;line-height:1.2;vertical-align:middle;}
+    h1.title{font-size:10pt;padding:4px;}
+    .badge{font-size:7pt;}
+    tr.section td{font-size:8.5pt;padding:3px 6px;}
+    tr.status th{font-size:7.5pt;padding:2px 3px;}
+    .meta td{font-size:8pt;padding:2px 4px;}
+    input[type="text"],textarea,select{font-size:8pt;}
+    .note-area{min-height:0 !important;height:32px !important;overflow:hidden;resize:none;}
+    /* Poznámka od MP u hodinek — větší ale omezená */
+    [data-k="h_poznamka_mp"]{height:48px !important;}
+    .opts label{font-size:8pt;}
+    input[type="radio"],input[type="checkbox"]{width:11px;height:11px;}
+  }
+</style>
+</head>
+<body class="mode-iphone">
+<div class="wrap">
+
+  <!-- PŘEPÍNAČ -->
+  <div class="switcher">
+    <button id="btn-iphone" class="active-iphone" onclick="setMode('iphone')">🍎 iPhone</button>
+    <button id="btn-android" onclick="setMode('android')">🤖 Android</button>
+    <button id="btn-hodinky" onclick="setMode('hodinky')">⌚ Hodinky</button>
+  </div>
+
+  <div class="toolbar">
+    <button onclick="printScaled()">🖨️ Tisk / PDF</button>
+    <button class="sec" onclick="saveHTML()">💾 Uložit HTML</button>
+    <button class="sec" onclick="exportCSV()">📊 Export Excel (CSV)</button>
+    <button class="sec" onclick="exportJPG()">📸 Export JPG</button>
+    <button style="background:#27ae60;" onclick="saveToCloud()">☁️ Uložit do cloudu</button>
+    <button style="background:#8e44ad;" onclick="loadFromCloud()">📂 Načíst záznam</button>
+    <span class="spacer"></span>
+    <button class="sec" onclick="resetForm()">↺ Vyčistit</button>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <h1 class="title">
+      Check list telefonu
+      <span class="badge badge-iphone" id="badge-iphone">iPhone</span>
+      <span class="badge badge-android" id="badge-android" style="display:none">Android</span>
+      <span class="badge badge-hodinky" id="badge-hodinky" style="display:none">Hodinky</span>
+    </h1>
+    <table>
+      <tbody>
+
+        <!-- META - TELEFON -->
+        <tr class="meta phone-only"><td class="lbl right-medium">Telefon (model)</td><td colspan="3"><input type="text" data-k="telefon"></td></tr>
+        <tr class="meta phone-only"><td class="lbl right-medium">IMEI</td><td colspan="3"><input type="text" data-k="imei"></td></tr>
+        <tr class="meta phone-only"><td class="lbl right-medium">Kód MP na štítku</td><td colspan="3"><input type="text" data-k="kod_mp"></td></tr>
+
+        <!-- META - HODINKY -->
+        <tr class="meta hodinky-sheet"><td class="lbl right-medium">Model hodinek</td><td colspan="3"><input type="text" data-k="hodinky_model"></td></tr>
+        <tr class="meta hodinky-sheet"><td class="lbl right-medium">IMEI / kód</td><td colspan="3"><input type="text" data-k="hodinky_imei"></td></tr>
+        <tr class="meta hodinky-sheet"><td class="lbl right-medium">Kód MP na štítku</td><td colspan="3"><input type="text" data-k="hodinky_kod_mp"></td></tr>
+
+        <!-- HODINKY SEKCE -->
+        <tr class="section hodinky-sheet" style="background:#6a1b9a;color:#fff;"><td colspan="4">1. Nabíjení</td></tr>
+        <tr class="hodinky-sheet status"><th></th><th>ANO</th><th>NE</th><th>Pozn.</th></tr>
+        <tr class="hodinky-sheet"><td class="lbl right-medium">Nabíjí se</td>
+          <td class="center"><input type="radio" name="h_nabijeni" value="ano"></td>
+          <td class="center"><input type="radio" name="h_nabijeni" value="ne"></td>
+          <td><input type="text" data-k="h_nabijeni_pozn"></td></tr>
+
+        <tr class="section hodinky-sheet" style="background:#6a1b9a;color:#fff;"><td colspan="4">2. Spuštění</td></tr>
+        <tr class="hodinky-sheet status"><th colspan="4">Výsledek po zapnutí</th></tr>
+        <tr class="hodinky-sheet"><td class="lbl right-medium">Spustí se (běží OS)</td>
+          <td class="center"><input type="radio" name="h_spusteni" value="ok"></td>
+          <td colspan="2" style="font-size:13px;color:#555;">✔ normální start</td></tr>
+        <tr class="hodinky-sheet"><td class="lbl right-medium">Zůstane na úvodní obrazovce</td>
+          <td class="center"><input type="radio" name="h_spusteni" value="freeze"></td>
+          <td colspan="2" style="font-size:13px;color:#555;">⚠ SW / HW problém</td></tr>
+        <tr class="hodinky-sheet"><td class="lbl right-medium">Nespustí se</td>
+          <td class="center"><input type="radio" name="h_spusteni" value="dead"></td>
+          <td colspan="2" style="font-size:13px;color:#555;">✘ nereaguje</td></tr>
+
+        <tr class="section hodinky-sheet" style="background:#6a1b9a;color:#fff;"><td colspan="4">3. LCD a stav skla</td></tr>
+        <tr class="hodinky-sheet status"><th></th><th>ANO</th><th>NE</th><th>NELZE ZJISTIT</th></tr>
+        <tr class="hodinky-sheet"><td class="lbl right-medium">LCD funkční</td>
+          <td class="center"><input type="radio" name="h_lcd" value="ano"></td>
+          <td class="center"><input type="radio" name="h_lcd" value="ne"></td>
+          <td class="center"><input type="radio" name="h_lcd" value="nelze"></td></tr>
+        <tr class="hodinky-sheet"><td class="lbl right-medium">Prasklé sklo</td>
+          <td class="center"><input type="radio" name="h_prask" value="ano"></td>
+          <td class="center"><input type="radio" name="h_prask" value="ne"></td>
+          <td><input type="text" data-k="h_prask_pozn"></td></tr>
+        <tr class="hodinky-sheet status"><th></th><th>ANO HODNĚ</th><th>ANO MÁLO</th><th>NE</th></tr>
+        <tr class="hodinky-sheet"><td class="lbl right-medium">Poškrábané sklo</td>
+          <td class="center"><input type="radio" name="h_poskr" value="hodne"></td>
+          <td class="center"><input type="radio" name="h_poskr" value="malo"></td>
+          <td class="center"><input type="radio" name="h_poskr" value="ne"></td></tr>
+
+        <tr class="section hodinky-sheet" style="background:#6a1b9a;color:#fff;"><td colspan="4">Poznámka od MP</td></tr>
+        <tr class="hodinky-sheet"><td colspan="4"><textarea class="note-area" data-k="h_poznamka_mp"></textarea></td></tr>
+
+        <!-- ZÁKLADNÍ -->
+        <tr><td class="lbl right-medium">TELEFON JDE SPUSTIT</td>
+          <td colspan="3"><div class="opts">
+            <label><input type="radio" name="spustit" value="ANO">ANO</label>
+            <label><input type="radio" name="spustit" value="NE">NE</label>
+          </div></td></tr>
+        <tr><td class="lbl right-medium">TELEFON MÁ ODBĚR</td>
+          <td><div class="opts">
+            <label><input type="radio" name="odber" value="ANO">ANO</label>
+            <label><input type="radio" name="odber" value="NE">NE</label>
+          </div></td>
+          <td colspan="2">AMPÉRY: <input type="text" data-k="ampery" style="width:60%"></td></tr>
+
+        <!-- === VZHLED === -->
+        <tr class="section sec-general"><td colspan="4">Vzhled</td></tr>
+        <tr class="status"><th></th><th>ANO HODNĚ</th><th>ANO MÁLO</th><th>NE</th></tr>
+        <tr><td class="lbl right-medium">Rámeček – POŠKRÁBANÝ</td>
+          <td class="center"><input type="radio" name="ram" value="hodne"></td>
+          <td class="center"><input type="radio" name="ram" value="malo"></td>
+          <td class="center"><input type="radio" name="ram" value="ne"></td></tr>
+        <tr><td class="lbl right-medium">Záda – POŠKRÁBANÉ</td>
+          <td class="center"><input type="radio" name="zada" value="hodne"></td>
+          <td class="center"><input type="radio" name="zada" value="malo"></td>
+          <td class="center"><input type="radio" name="zada" value="ne"></td></tr>
+        <tr class="status"><th></th><th>ANO</th><th>NE</th><th>Pozn.</th></tr>
+        <tr><td class="lbl right-medium">Sklíčko kamery – POŠKOZENÉ</td>
+          <td class="center"><input type="radio" name="sklicko" value="ano"></td>
+          <td class="center"><input type="radio" name="sklicko" value="ne"></td>
+          <td><input type="text" data-k="sklicko_pozn"></td></tr>
+
+        <!-- === NABÍJENÍ === -->
+        <tr class="section sec-general"><td colspan="4">Nabíjení</td></tr>
+        <tr class="status"><th></th><th>FUNKČNÍ</th><th>ČÁSTEČNĚ</th><th>NEFUNKČNÍ</th></tr>
+        <tr><td class="lbl right-medium">Nabíjení kabelem</td>
+          <td class="center"><input type="radio" name="nabkabel" value="f"></td>
+          <td class="center"><input type="radio" name="nabkabel" value="c"></td>
+          <td class="center"><input type="radio" name="nabkabel" value="n"></td></tr>
+        <tr><td class="lbl right-medium">Nabíjení bezdrátové</td>
+          <td class="center"><input type="radio" name="nabbezd" value="f"></td>
+          <td class="center"><input type="radio" name="nabbezd" value="c"></td>
+          <td class="center"><input type="radio" name="nabbezd" value="n"></td></tr>
+
+        <!-- === LCD === -->
+        <tr class="section sec-general"><td colspan="4">LCD / Displej</td></tr>
+        <tr class="status"><th></th><th>ANO</th><th>NE</th><th>Pozn.</th></tr>
+        <tr><td class="lbl right-medium">FUNGUJE</td>
+          <td class="center"><input type="radio" name="lcdfung" value="ano"></td>
+          <td class="center"><input type="radio" name="lcdfung" value="ne"></td>
+          <td></td></tr>
+        <tr class="only-iphone"><td class="lbl right-medium">Neznámý díl – LCD (iPhone)</td>
+          <td class="center"><input type="radio" name="lcdnezn" value="ano"></td>
+          <td class="center"><input type="radio" name="lcdnezn" value="ne"></td>
+          <td></td></tr>
+        <tr><td class="lbl right-medium">PRASKLÉ SKLO</td>
+          <td class="center"><input type="radio" name="lcdprask" value="ano"></td>
+          <td class="center"><input type="radio" name="lcdprask" value="ne"></td>
+          <td></td></tr>
+        <tr class="status"><th></th><th>ANO HODNĚ</th><th>ANO MÁLO</th><th>NE</th></tr>
+        <tr><td class="lbl right-medium">VYPÁLENÝ</td>
+          <td class="center"><input type="radio" name="vypaleny" value="hodne"></td>
+          <td class="center"><input type="radio" name="vypaleny" value="malo"></td>
+          <td class="center"><input type="radio" name="vypaleny" value="ne"></td></tr>
+        <tr><td class="lbl right-medium">Sklo – POŠKRÁBANÉ</td>
+          <td class="center"><input type="radio" name="stavskla" value="hodne"></td>
+          <td class="center"><input type="radio" name="stavskla" value="malo"></td>
+          <td class="center"><input type="radio" name="stavskla" value="ne"></td></tr>
+
+        <!-- === BATERIE === -->
+        <tr class="section sec-general"><td colspan="4">Baterie</td></tr>
+        <tr class="only-iphone">
+          <td class="lbl right-medium">iPhone – zdraví baterie %</td>
+          <td colspan="3"><input type="text" data-k="bat_zdravi" style="width:40%"> %</td></tr>
+        <tr class="status"><th></th><th>ANO</th><th>NE</th><th></th></tr>
+        <tr class="only-iphone"><td class="lbl right-medium">Neznámý díl – baterie (iPhone)</td>
+          <td class="center"><input type="radio" name="batnezn" value="ano"></td>
+          <td class="center"><input type="radio" name="batnezn" value="ne"></td>
+          <td></td></tr>
+        <tr><td class="lbl right-medium">NAFOUKLÁ</td>
+          <td class="center"><input type="radio" name="nafoukla" value="ano"></td>
+          <td class="center"><input type="radio" name="nafoukla" value="ne"></td>
+          <td></td></tr>
+
+        <!-- === VOLÁNÍ === -->
+        <tr class="section sec-general"><td colspan="4">Volání</td></tr>
+        <tr class="status"><th></th><th>ANO</th><th>NE</th><th>Pozn.</th></tr>
+        <tr><td class="lbl right-medium">SIM (vidí/nevidí SIM)</td>
+          <td class="center"><input type="radio" name="sim" value="ano"></td>
+          <td class="center"><input type="radio" name="sim" value="ne"></td>
+          <td><input type="text" data-k="sim_pozn"></td></tr>
+        <tr><td class="lbl right-medium">Volání</td>
+          <td class="center"><input type="radio" name="volani" value="ano"></td>
+          <td class="center"><input type="radio" name="volani" value="ne"></td>
+          <td><input type="text" data-k="volani_pozn"></td></tr>
+        <tr><td class="lbl right-medium">Síla signálu GSM</td>
+          <td class="center"><input type="radio" name="signal" value="ano"></td>
+          <td class="center"><input type="radio" name="signal" value="ne"></td>
+          <td><input type="text" data-k="signal_pozn"></td></tr>
+        <tr><td class="lbl right-medium">Mikrofon horní</td>
+          <td class="center"><input type="radio" name="mikhor" value="ano"></td>
+          <td class="center"><input type="radio" name="mikhor" value="ne"></td>
+          <td><input type="text" data-k="mikhor_pozn"></td></tr>
+        <tr><td class="lbl right-medium">Mikrofon spodní</td>
+          <td class="center"><input type="radio" name="mikspod" value="ano"></td>
+          <td class="center"><input type="radio" name="mikspod" value="ne"></td>
+          <td><input type="text" data-k="mikspod_pozn"></td></tr>
+        <tr><td class="lbl right-medium">Horní sluchátko</td>
+          <td class="center"><input type="radio" name="sluchatko" value="ano"></td>
+          <td class="center"><input type="radio" name="sluchatko" value="ne"></td>
+          <td><input type="text" data-k="sluchatko_pozn"></td></tr>
+        <tr><td class="lbl right-medium">Spodní repro</td>
+          <td class="center"><input type="radio" name="repro" value="ano"></td>
+          <td class="center"><input type="radio" name="repro" value="ne"></td>
+          <td><input type="text" data-k="repro_pozn"></td></tr>
+
+        <!-- === FOCENÍ === -->
+        <tr class="section sec-general"><td colspan="4">Focení</td></tr>
+        <tr class="status"><th></th><th>ANO</th><th>NE</th><th>Pozn.</th></tr>
+        <tr><td class="lbl right-medium">Přední kamera</td>
+          <td class="center"><input type="radio" name="kampredni" value="ano"></td>
+          <td class="center"><input type="radio" name="kampredni" value="ne"></td>
+          <td><input type="text" data-k="kampredni_pozn"></td></tr>
+        <tr><td class="lbl right-medium">Zadní kamera</td>
+          <td class="center"><input type="radio" name="kamzadni" value="ano"></td>
+          <td class="center"><input type="radio" name="kamzadni" value="ne"></td>
+          <td><input type="text" data-k="kamzadni_pozn"></td></tr>
+        <tr><td class="lbl right-medium">Blesk</td>
+          <td class="center"><input type="radio" name="blesk" value="ano"></td>
+          <td class="center"><input type="radio" name="blesk" value="ne"></td>
+          <td><input type="text" data-k="blesk_pozn"></td></tr>
+
+        <!-- === FUNKCE – OBECNÉ === -->
+        <tr class="section sec-general"><td colspan="4">Funkce</td></tr>
+        <tr class="status"><th></th><th>ANO</th><th>NE</th><th>Pozn.</th></tr>
+        <tr><td class="lbl right-medium">WIFI</td>
+          <td class="center"><input type="radio" name="wifi" value="ano"></td>
+          <td class="center"><input type="radio" name="wifi" value="ne"></td>
+          <td><input type="text" data-k="wifi_pozn"></td></tr>
+        <tr><td class="lbl right-medium">Bluetooth</td>
+          <td class="center"><input type="radio" name="bt" value="ano"></td>
+          <td class="center"><input type="radio" name="bt" value="ne"></td>
+          <td><input type="text" data-k="bt_pozn"></td></tr>
+        <tr><td class="lbl right-medium">NFC</td>
+          <td class="center"><input type="radio" name="nfc" value="ano"></td>
+          <td class="center"><input type="radio" name="nfc" value="ne"></td>
+          <td><input type="text" data-k="nfc_pozn"></td></tr>
+        <tr><td class="lbl right-medium">GPS</td>
+          <td class="center"><input type="radio" name="gps" value="ano"></td>
+          <td class="center"><input type="radio" name="gps" value="ne"></td>
+          <td><input type="text" data-k="gps_pozn"></td></tr>
+        <tr><td class="lbl right-medium">Tlačítka hlasitosti</td>
+          <td class="center"><input type="radio" name="tlac_hlas" value="ano"></td>
+          <td class="center"><input type="radio" name="tlac_hlas" value="ne"></td>
+          <td><input type="text" data-k="tlac_hlas_pozn"></td></tr>
+        <tr><td class="lbl right-medium">Tlačítko napájení</td>
+          <td class="center"><input type="radio" name="tlac_nap" value="ano"></td>
+          <td class="center"><input type="radio" name="tlac_nap" value="ne"></td>
+          <td><input type="text" data-k="tlac_nap_pozn"></td></tr>
+        <tr><td class="lbl right-medium">Proximity sensor</td>
+          <td class="center"><input type="radio" name="proximity" value="ano"></td>
+          <td class="center"><input type="radio" name="proximity" value="ne"></td>
+          <td><input type="text" data-k="proximity_pozn"></td></tr>
+        <tr><td class="lbl right-medium">Vibrace</td>
+          <td class="center"><input type="radio" name="vibrace" value="ano"></td>
+          <td class="center"><input type="radio" name="vibrace" value="ne"></td>
+          <td><input type="text" data-k="vibrace_pozn"></td></tr>
+
+        <!-- === POUZE iPHONE === -->
+        <tr class="section sec-iphone only-iphone"><td colspan="4">🍎 Funkce iPhone</td></tr>
+        <tr class="only-iphone status-row status"><th></th><th>ANO</th><th>NE</th><th>Pozn.</th></tr>
+        <tr class="only-iphone"><td class="lbl right-medium">Face ID</td>
+          <td class="center"><input type="radio" name="faceid" value="ano"></td>
+          <td class="center"><input type="radio" name="faceid" value="ne"></td>
+          <td><input type="text" data-k="faceid_pozn"></td></tr>
+
+        <!-- === POUZE ANDROID === -->
+        <tr class="section sec-android only-android"><td colspan="4">🤖 Funkce Android</td></tr>
+        <tr class="only-android status-row status android-status"><th></th><th>ANO</th><th>NE</th><th>Pozn.</th></tr>
+        <tr class="only-android"><td class="lbl right-medium">Otisk prstu</td>
+          <td class="center"><input type="radio" name="otisk" value="ano"></td>
+          <td class="center"><input type="radio" name="otisk" value="ne"></td>
+          <td><input type="text" data-k="otisk_pozn"></td></tr>
+        <tr class="only-android"><td class="lbl right-medium">Rozpoznání obličeje</td>
+          <td class="center"><input type="radio" name="face_android" value="ano"></td>
+          <td class="center"><input type="radio" name="face_android" value="ne"></td>
+          <td><input type="text" data-k="face_android_pozn"></td></tr>
+        <tr class="only-android"><td class="lbl right-medium">USB-C výstup / OTG</td>
+          <td class="center"><input type="radio" name="usbc_otg" value="ano"></td>
+          <td class="center"><input type="radio" name="usbc_otg" value="ne"></td>
+          <td><input type="text" data-k="usbc_pozn"></td></tr>
+
+        <!-- === SW === -->
+        <tr class="section sec-general only-iphone"><td colspan="4">SW / Zámky</td></tr>
+        <tr class="status only-iphone"><th></th><th>ANO</th><th>NE</th><th>Pozn.</th></tr>
+        <tr class="only-iphone"><td class="lbl right-medium">iCloud zámek (Activation Lock)</td>
+          <td class="center"><input type="radio" name="icloud" value="ano"></td>
+          <td class="center"><input type="radio" name="icloud" value="ne"></td>
+          <td></td></tr>
+        <tr class="section sec-general only-android"><td colspan="4">SW / Zámky</td></tr>
+        <tr class="status only-android"><th></th><th>ANO</th><th>NE</th><th>Pozn.</th></tr>
+        <tr class="only-android"><td class="lbl right-medium">FRP (Google účet) zámek</td>
+          <td class="center"><input type="radio" name="frp" value="ano"></td>
+          <td class="center"><input type="radio" name="frp" value="ne"></td>
+          <td></td></tr>
+
+        <!-- === POZNÁMKA === -->
+        <tr class="section sec-general"><td colspan="4">Poznámka</td></tr>
+        <tr><td colspan="4"><textarea class="note-area" data-k="poznamka"></textarea></td></tr>
+
+        <!-- PODPIS -->
+        <tr class="meta phone-only"><td class="lbl right-medium">Testoval: <span style="color:red">*</span></td><td colspan="3">
+          <select id="sel-testoval" data-k="testoval" onchange="this.style.borderColor=this.value?'#1F4E78':'red';if(this.value)stampDatum();" style="width:100%;font-size:14px;padding:4px;border:1px solid #888;border-radius:4px;font-family:inherit;background:#fff;">
+            <option value="">— vyberte technika —</option>
+            <option>Bohdan</option>
+            <option>Luděk</option>
+            <option>Miro</option>
+            <option>Ota</option>
+            <option>Saša</option>
+            <option>Štěpán</option>
+            <option>Tibor</option>
+          </select>
+        </td></tr>
+        <tr class="meta hodinky-sheet"><td class="lbl right-medium">Testoval: <span style="color:red">*</span></td><td colspan="3">
+          <select id="sel-testoval-h" data-k="h_testoval" onchange="this.style.borderColor=this.value?'#6a1b9a':'red';if(this.value)stampDatum();" style="width:100%;font-size:14px;padding:4px;border:1px solid #888;border-radius:4px;font-family:inherit;background:#fff;">
+            <option value="">— vyberte technika —</option>
+            <option>Bohdan</option>
+            <option>Luděk</option>
+            <option>Miro</option>
+            <option>Ota</option>
+            <option>Saša</option>
+            <option>Štěpán</option>
+            <option>Tibor</option>
+          </select>
+        </td></tr>
+        <tr class="meta phone-only"><td class="lbl right-medium">DATUM:</td><td colspan="3"><input type="text" id="inp-datum" data-k="datum" readonly style="background:#f0f0f0;color:#333;" placeholder="vyplní se automaticky"></td></tr>
+        <tr class="meta hodinky-sheet"><td class="lbl right-medium">DATUM:</td><td colspan="3"><input type="text" id="inp-datum-h" data-k="h_datum" readonly style="background:#f0f0f0;color:#333;" placeholder="vyplní se automaticky"></td></tr>
+
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// === TIMESTAMP ===
+function stampDatum(){
+  const now = new Date();
+  const d = String(now.getDate()).padStart(2,'0');
+  const m = String(now.getMonth()+1).padStart(2,'0');
+  const y = now.getFullYear();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  const stamp = d+'.'+m+'.'+y+' '+hh+':'+mm;
+  const isHodinky = document.body.classList.contains('mode-hodinky');
+  const el = document.getElementById(isHodinky ? 'inp-datum-h' : 'inp-datum');
+  if(el) el.value = stamp;
+}
+
+// === PŘEPÍNAČ ===
+function setMode(mode){
+  document.body.className = 'mode-' + mode;
+  document.getElementById('btn-iphone').className = mode==='iphone' ? 'active-iphone' : '';
+  document.getElementById('btn-android').className = mode==='android' ? 'active-android' : '';
+  document.getElementById('btn-hodinky').className = mode==='hodinky' ? 'active-hodinky' : '';
+  document.getElementById('badge-iphone').style.display = mode==='iphone' ? '' : 'none';
+  document.getElementById('badge-android').style.display = mode==='android' ? '' : 'none';
+  document.getElementById('badge-hodinky').style.display = mode==='hodinky' ? '' : 'none';
+}
+
+// === HELPER: název souboru ===
+function getFileName(){
+  const mode = document.body.classList.contains('mode-android') ? 'android' : document.body.classList.contains('mode-hodinky') ? 'hodinky' : 'iphone';
+  const modelKey = mode === 'hodinky' ? 'hodinky_model' : 'telefon';
+  const imeiKey  = mode === 'hodinky' ? 'hodinky_imei' : 'imei';
+  const imei  = (document.querySelector('[data-k="' + imeiKey  + '"]') || {}).value || '';
+  const model = (document.querySelector('[data-k="' + modelKey + '"]') || {}).value || mode;
+  return ('checklist-' + (imei || model)).replace(/\s+/g,'-');
+}
+
+// === ULOŽIT HTML ===
+function saveHTML(){
+  const html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+  const blob = new Blob([html], {type:"text/html"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = getFileName() + ".html";
+  a.click();
+}
+
+// === EXPORT CSV ===
+function exportCSV(){
+  const mode = document.body.classList.contains('mode-android') ? 'android' : document.body.classList.contains('mode-hodinky') ? 'hodinky' : 'iphone';
+  const valMap = {hodne:"ANO HODNĚ",malo:"ANO MÁLO",ne:"NE",ano:"ANO",f:"FUNKČNÍ",c:"ČÁSTEČNĚ",n:"NEFUNKČNÍ",ok:"SPUSTÍ SE",freeze:"ZŮSTANE NA ÚVODNÍ",dead:"NESPUSTÍ SE",nelze:"NELZE ZJISTIT"};
+  const rows = [["Položka","Hodnota"]];
+  const modeLabel = mode === 'iphone' ? 'iPhone' : mode === 'android' ? 'Android' : 'Hodinky';
+  rows.push(["Režim", modeLabel]);
+
+  document.querySelectorAll("#sheet tr").forEach(tr => {
+    if(getComputedStyle(tr).display === 'none') return;
+
+    if(tr.classList.contains("section")){
+      rows.push(["=== " + tr.innerText.trim() + " ===", ""]);
+      return;
+    }
+    const lbl = tr.querySelector(".lbl");
+    if(!lbl) return;
+    const label = lbl.innerText.trim();
+    let val = "";
+
+    const txt = tr.querySelector('input[type="text"]');
+    if(txt && txt.value) val = txt.value;
+
+    const sel = tr.querySelector('select');
+    if(sel && sel.value) val = sel.value;
+
+    const ta = tr.querySelector('textarea');
+    if(ta && ta.value) val = ta.value;
+
+    const radios = tr.querySelectorAll('input[type="radio"]:checked');
+    if(radios.length){
+      val = [...radios].map(r => valMap[r.value] || r.value).join(" ");
+    }
+
+    rows.push([label, val]);
+  });
+
+  let csv = "\uFEFF" + rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(";")).join("\r\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = getFileName() + ".csv";
+  a.click();
+}
+
+// === RESET ===
+function resetForm(){
+  if(!confirm("Vyčistit celý formulář?")) return;
+  document.querySelectorAll('input[type="text"], textarea').forEach(e => e.value = "");
+  document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(e => e.checked = false);
+  document.querySelectorAll('select').forEach(e => { e.selectedIndex = 0; e.style.borderColor = '#888'; });
+}
+
+// === EXPORT JPG ===
+function exportJPG(){
+  function doExport(){
+    const sheet = document.getElementById('sheet');
+    const replacements = [];
+
+    sheet.querySelectorAll('input[type="text"], textarea').forEach(el => {
+      if(getComputedStyle(el.closest('tr')).display === 'none') return;
+      const span = document.createElement('span');
+      span.textContent = el.value || '';
+      span.style.cssText = 'font-size:14px;font-family:Arial,sans-serif;display:inline-block;min-width:40px;border-bottom:1px dotted #888;';
+      el.parentNode.insertBefore(span, el);
+      el.style.display = 'none';
+      replacements.push({el, span});
+    });
+
+    sheet.querySelectorAll('select').forEach(el => {
+      if(getComputedStyle(el.closest('tr')).display === 'none') return;
+      const span = document.createElement('span');
+      span.textContent = el.value || '—';
+      span.style.cssText = 'font-size:14px;font-family:Arial,sans-serif;font-weight:bold;';
+      el.parentNode.insertBefore(span, el);
+      el.style.display = 'none';
+      replacements.push({el, span});
+    });
+
+    sheet.querySelectorAll('input[type="radio"]').forEach(el => {
+      if(getComputedStyle(el.closest('tr')).display === 'none') return;
+      const span = document.createElement('span');
+      span.textContent = el.checked ? '✔' : '○';
+      span.style.cssText = 'font-size:15px;' + (el.checked ? 'color:#1F4E78;font-weight:bold;' : 'color:#aaa;');
+      el.parentNode.insertBefore(span, el);
+      el.style.display = 'none';
+      replacements.push({el, span});
+    });
+
+    html2canvas(sheet, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false
+    }).then(canvas => {
+      replacements.forEach(({el, span}) => {
+        el.style.display = '';
+        span.parentNode.removeChild(span);
+      });
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/jpeg', 0.95);
+      a.download = getFileName() + '.jpg';
+      a.click();
+    }).catch(err => {
+      replacements.forEach(({el, span}) => {
+        el.style.display = '';
+        if(span.parentNode) span.parentNode.removeChild(span);
+      });
+      alert('Chyba při exportu: ' + err.message);
+    });
+  }
+
+  if(typeof html2canvas === 'undefined'){
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    s.onload = doExport;
+    s.onerror = () => alert('Nepodařilo se načíst html2canvas. Zkontrolujte připojení.');
+    document.head.appendChild(s);
+  } else {
+    doExport();
+  }
+}
+
+// === NAČÍST ZE CLOUDU ===
+function loadFromCloud(){
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzW9oqMYbW9k2SR1YdB7F-yfZ5w9pOr3DvMP6IrAAw8HZGC_nqsyCuzhWMzGw-zKBws/exec';
+  const imei = prompt('Zadejte IMEI nebo kód zařízení:');
+  if(!imei) return;
+
+  const btn = document.querySelector('button[onclick="loadFromCloud()"]');
+  btn.textContent = '⏳ Načítám...';
+  btn.disabled = true;
+
+  // JSONP — obejití CORS omezení
+  const cbName = 'jsonpCb_' + Date.now();
+  const script = document.createElement('script');
+
+  window[cbName] = function(res){
+    // Cleanup
+    delete window[cbName];
+    document.head.removeChild(script);
+    btn.textContent = '📂 Načíst záznam';
+    btn.disabled = false;
+
+    if(res.status === 'notfound'){
+      alert('Záznam s IMEI "' + imei + '" nebyl nalezen.');
+      return;
+    }
+    if(res.status !== 'ok'){
+      alert('Chyba: ' + (res.message || 'neznámá chyba'));
+      return;
+    }
+
+    const d = res.data;
+
+    // Přepni režim
+    if(d['Režim']) setMode(d['Režim'] === 'iPhone' ? 'iphone' : d['Režim'] === 'Android' ? 'android' : 'hodinky');
+
+    // Předvyplň textové vstupy a textarea
+    document.querySelectorAll('#sheet [data-k]').forEach(el => {
+      const key = el.getAttribute('data-k');
+      if(d[key] !== undefined && d[key] !== '') el.value = d[key];
+    });
+
+    // Předvyplň selecty
+    document.querySelectorAll('#sheet select[data-k]').forEach(el => {
+      const key = el.getAttribute('data-k');
+      if(d[key] !== undefined && d[key] !== '') el.value = d[key];
+    });
+
+    // Předvyplň radio buttons
+    const valMapRev = {
+      'ANO HODNĚ':'hodne','ANO MÁLO':'malo','NE':'ne','ANO':'ano',
+      'FUNKČNÍ':'f','ČÁSTEČNĚ':'c','NEFUNKČNÍ':'n',
+      'SPUSTÍ SE':'ok','ZŮSTANE NA ÚVODNÍ':'freeze','NESPUSTÍ SE':'dead',
+      'NELZE ZJISTIT':'nelze'
+    };
+    document.querySelectorAll('#sheet input[type="radio"]').forEach(el => {
+      const stored = d[el.name];
+      if(stored !== undefined){
+        const val = valMapRev[stored] || stored;
+        el.checked = (el.value === val);
+      }
+    });
+
+    alert('✅ Záznam načten.');
+  };
+
+  script.onerror = function(){
+    delete window[cbName];
+    document.head.removeChild(script);
+    btn.textContent = '📂 Načíst záznam';
+    btn.disabled = false;
+    alert('Chyba při načítání — zkontroluj připojení.');
+  };
+
+  script.src = SCRIPT_URL + '?imei=' + encodeURIComponent(imei.trim()) + '&callback=' + cbName;
+  document.head.appendChild(script);
+}
+
+// === ULOŽIT DO CLOUDU ===
+function saveToCloud(){
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzW9oqMYbW9k2SR1YdB7F-yfZ5w9pOr3DvMP6IrAAw8HZGC_nqsyCuzhWMzGw-zKBws/exec';
+  const mode = document.body.classList.contains('mode-android') ? 'Android' : document.body.classList.contains('mode-hodinky') ? 'Hodinky' : 'iPhone';
+  const valMap = {hodne:'ANO HODNĚ',malo:'ANO MÁLO',ne:'NE',ano:'ANO',f:'FUNKČNÍ',c:'ČÁSTEČNĚ',n:'NEFUNKČNÍ',ok:'SPUSTÍ SE',freeze:'ZŮSTANE NA ÚVODNÍ',dead:'NESPUSTÍ SE',nelze:'NELZE ZJISTIT'};
+
+  const data = {Režim: mode};
+
+  // Textové vstupy a textarea
+  document.querySelectorAll('#sheet [data-k]').forEach(el => {
+    if(getComputedStyle(el.closest('tr')).display === 'none') return;
+    const key = el.getAttribute('data-k');
+    data[key] = el.value || '';
+  });
+
+  // Select (technik)
+  document.querySelectorAll('#sheet select[data-k]').forEach(el => {
+    if(getComputedStyle(el.closest('tr')).display === 'none') return;
+    data[el.getAttribute('data-k')] = el.value || '';
+  });
+
+  // Radio buttons — vezmi název group + hodnotu
+  const radios = {};
+  document.querySelectorAll('#sheet input[type="radio"]:checked').forEach(el => {
+    if(getComputedStyle(el.closest('tr')).display === 'none') return;
+    radios[el.name] = valMap[el.value] || el.value;
+  });
+  Object.assign(data, radios);
+
+  // Validace — technik musí být vybrán
+  const technikKey = mode === 'Hodinky' ? 'h_testoval' : 'testoval';
+  if(!data[technikKey]){
+    alert('Vyberte technika před uložením.');
+    return;
+  }
+
+  const btn = document.querySelector('button[onclick="saveToCloud()"]');
+  btn.textContent = '⏳ Ukládám...';
+  btn.disabled = true;
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(data)
+  }).then(() => {
+    btn.textContent = '✅ Uloženo';
+    btn.style.background = '#1e8449';
+    setTimeout(() => {
+      btn.textContent = '☁️ Uložit do cloudu';
+      btn.style.background = '#27ae60';
+      btn.disabled = false;
+    }, 3000);
+  }).catch(err => {
+    btn.textContent = '❌ Chyba';
+    btn.style.background = '#c0392b';
+    btn.disabled = false;
+    alert('Chyba při ukládání: ' + err.message);
+  });
+}
+
+
+function printScaled(){
+  const sheet = document.getElementById('sheet');
+  // A4 portrait, margin 8mm = využitelná výška 281mm = 1063px při 96dpi
+  const A4_H = 1063;
+
+  // 1. Aplikuj pre-print styly pro přesné měření
+  sheet.classList.add('pre-print');
+  sheet.style.zoom = '';
+  const contentH = sheet.scrollHeight;
+  sheet.classList.remove('pre-print');
+
+  // 2. Spočítej zoom - max 1 (nepřiblížit nad 100%)
+  const zoom = Math.min(1, (A4_H / contentH)).toFixed(4);
+
+  // 3. Aplikuj zoom + nastav title
+  sheet.style.zoom = zoom;
+  document.title = getFileName();
+
+  // 4. Tisk + reset
+  setTimeout(function(){
+    window.print();
+    setTimeout(function(){
+      sheet.style.zoom = '';
+    }, 500);
+  }, 150);
+}
+</script>
+</body>
+</html>
