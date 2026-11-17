@@ -21,6 +21,7 @@ input[type=file]{display:none}
 .foto img{width:96px;height:96px;object-fit:cover;border-radius:10px;border:3px solid #1fa37a}
 .ok{background:#e3f6ee;color:#11704f;border-radius:12px;padding:12px;font-size:17px;font-weight:700;display:none}
 .pop{font-size:13px;color:#777;text-align:center;margin-top:8px}
+.jine{display:flex;gap:10px;margin:14px 0 4px}.jine label{flex:1;text-align:center;border:2px solid #6b3fd4;color:#6b3fd4;border-radius:12px;padding:12px 6px;font-size:16px;font-weight:700;cursor:pointer}
 </style></head><body>
 <div class="hl">Displej Expert<small>Fotky k reklamaci</small></div>
 <div class="in">
@@ -28,8 +29,9 @@ input[type=file]{display:none}
   <div class="mi"><div class="av">Mirai</div><div class="bu" id="bu">Chvilku, načítám…</div></div>
   <div class="dil" id="dil" style="display:none"></div>
   <div id="ovl" style="display:none">
-    <label class="btn" id="btn">📷 Vyfoť závadu<input type="file" id="f" accept="image/*,video/*" capture="environment"></label>
+    <label class="btn" id="btn">📷 Vyfoť závadu<input type="file" id="f" accept="image/*" capture="environment"></label>
     <div class="pop" id="pop">Otevře se fotoaparát.</div>
+    <div class="jine"><label>🎬 Natočit video<input type="file" id="fv" accept="video/*" capture="environment"></label><label>🖼️ Vybrat z galerie<input type="file" id="fg" accept="image/*,video/*"></label></div>
     <div class="foto" id="foto"></div>
     <div class="ok" id="ok">✅ Hotovo. Vrať se k počítači a klikni „Další“.</div>
     <div class="pop">Stránka platí 2 hodiny a jen pro tuhle reklamaci.</div>
@@ -68,8 +70,8 @@ function zmensi(file) {   // fotku zmenšíme na max. 1600 px, ať se rychle po�
   });
 }
 function base64(file) { return new Promise((ok, chyba) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1]); r.onerror = chyba; r.readAsDataURL(file); }); }
-$("f").onchange = async () => {
-  const file = $("f").files[0]; $("f").value = ""; if (!file) return;
+async function vybrano(inp) {
+  const file = inp.files[0]; inp.value = ""; if (!file) return;
   const video = /^video\//.test(file.type);
   if (video && file.size > 25 * 1024 * 1024) return mirai("Video je moc dlouhé. Natoč kratší, nejvýš pár vteřin.", true);
   $("btn").classList.add("vyp"); mirai("Posílám…");
@@ -83,7 +85,8 @@ $("f").onchange = async () => {
     mirai("Super, fotka je u mě. Na počítači už ji vidíš. Chceš přidat další?");
   } catch (e) { mirai("Poslat se to nepovedlo: " + e.message + " Zkus to znovu.", true); }
   $("btn").classList.remove("vyp");
-};
+}
+["f", "fv", "fg"].forEach(id => { $(id).onchange = () => vybrano($(id)); });
 start();
 </script>
 </body></html>
