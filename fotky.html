@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Fotky k reklamaci – Displej Expert</title>
+<style>
+body{margin:0;background:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#222}
+.hl{background:linear-gradient(90deg,#6b3fd4,#19b3c9);color:#fff;padding:16px 18px;font-weight:800;font-size:19px}
+.hl small{display:block;font-weight:400;font-size:13px;opacity:.9}
+.in{padding:18px;max-width:520px;margin:0 auto}
+.zk{background:#fff3cd;border:2px solid #e0a800;border-radius:10px;padding:8px 10px;font-size:14px;font-weight:700;margin-bottom:12px;display:none}
+.mi{display:flex;gap:10px;align-items:flex-start;margin-bottom:16px}
+.av{flex:0 0 46px;height:46px;border-radius:50%;background:#6b3fd4;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+.bu{background:#f1ecfb;border-radius:14px;padding:12px 14px;font-size:18px;line-height:1.35}
+.bu.chyba{background:#fdeceb;color:#8a1c22}
+.dil{background:#f4f3f6;border-radius:10px;padding:10px 12px;font-size:16px;margin-bottom:16px;font-weight:700}
+label.btn{display:block;text-align:center;border-radius:16px;background:#6b3fd4;color:#fff;font-size:24px;font-weight:800;padding:26px 10px;margin:8px 0;cursor:pointer}
+label.btn.dalsi{background:#fff;color:#6b3fd4;border:2px solid #6b3fd4;font-size:19px;padding:15px}
+label.btn.vyp{opacity:.4;pointer-events:none}
+input[type=file]{display:none}
+.foto{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.foto img{width:96px;height:96px;object-fit:cover;border-radius:10px;border:3px solid #1fa37a}
+.ok{background:#e3f6ee;color:#11704f;border-radius:12px;padding:12px;font-size:17px;font-weight:700;display:none}
+.pop{font-size:13px;color:#777;text-align:center;margin-top:8px}
+</style></head><body>
+<div class="hl">Displej Expert<small>Fotky k reklamaci</small></div>
+<div class="in">
+  <div class="zk" id="zk">🧪 ZKUŠEBNÍ REŽIM</div>
+  <div class="mi"><div class="av">Mirai</div><div class="bu" id="bu">Chvilku, načítám…</div></div>
+  <div class="dil" id="dil" style="display:none"></div>
+  <div id="ovl" style="display:none">
+    <label class="btn" id="btn">📷 Vyfoť závadu<input type="file" id="f" accept="image/*,video/*" capture="environment"></label>
+    <div class="pop" id="pop">Otevře se fotoaparát.</div>
+    <div class="foto" id="foto"></div>
+    <div class="ok" id="ok">✅ Hotovo. Vrať se k počítači a klikni „Další“.</div>
+    <div class="pop">Stránka platí 2 hodiny a jen pro tuhle reklamaci.</div>
+  </div>
+</div>
+<script>
+/* Příjem: Apps Script „Reklamace - fotky z telefonu“ (displejexpert), nasazení Kdokoli. */
+const EXEC = "https://script.google.com/macros/s/AKfycbxiFv_VKm7Mm4IdrSUaZu8m_crTfP9K_sa3W8sMAU7uvuCZHzw7vHcJ9_bIaOpVdwN12Q/exec";
+const P = new URLSearchParams(location.search), F = P.get("f") || "", K = P.get("k") || "";
+const $ = id => document.getElementById(id);
+function mirai(t, chyba) { const b = $("bu"); b.textContent = t; b.className = "bu" + (chyba ? " chyba" : ""); }
+async function api(telo) {
+  const r = telo ? await fetch(EXEC, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(telo) })
+                 : await fetch(EXEC + "?f=" + encodeURIComponent(F) + "&k=" + encodeURIComponent(K));
+  return r.json();
+}
+async function start() {
+  if (!F || !K) return mirai("Tenhle odkaz není celý. Naskenuj QR kód na počítači znovu.", true);
+  try {
+    const d = await api();
+    if (!d.ok) return mirai("Tenhle QR kód už neplatí. Vrať se k počítači a nech si ukázat nový.", true);
+    if (d.zk) $("zk").style.display = "block";
+    $("dil").textContent = d.nazev || "Reklamace"; $("dil").style.display = "block";
+    $("ovl").style.display = "block";
+    mirai("Ahoj. Vyfoť díl a hlavně závadu zblízka, ať je dobře vidět. Stačí jedna fotka.");
+  } catch (e) { mirai("Nejde se spojit. Zkontroluj internet v telefonu a zkus to znovu.", true); }
+}
+function zmensi(file) {   // fotku zmenšíme na max. 1600 px, ať se rychle pošle
+  return new Promise((ok, chyba) => {
+    const img = new Image(), u = URL.createObjectURL(file);
+    img.onload = () => { const m = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement("canvas");
+      c.width = Math.round(img.width * m); c.height = Math.round(img.height * m); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(u); ok({ mime: "image/jpeg", b64: c.toDataURL("image/jpeg", 0.85).split(",")[1], nahled: c.toDataURL("image/jpeg", 0.5) }); };
+    img.onerror = () => chyba(new Error("Fotku nejde přečíst."));
+    img.src = u;
+  });
+}
+function base64(file) { return new Promise((ok, chyba) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1]); r.onerror = chyba; r.readAsDataURL(file); }); }
+$("f").onchange = async () => {
+  const file = $("f").files[0]; $("f").value = ""; if (!file) return;
+  const video = /^video\//.test(file.type);
+  if (video && file.size > 25 * 1024 * 1024) return mirai("Video je moc dlouhé. Natoč kratší, nejvýš pár vteřin.", true);
+  $("btn").classList.add("vyp"); mirai("Posílám…");
+  try {
+    const x = video ? { mime: file.type || "video/mp4", b64: await base64(file) } : await zmensi(file);
+    const r = await api({ f: F, k: K, mime: x.mime, b64: x.b64 });
+    if (!r.ok) throw new Error(r.chyba || "Nepovedlo se.");
+    $("foto").insertAdjacentHTML("beforeend", x.nahled ? '<img src="' + x.nahled + '">' : '<img alt="🎬">');
+    $("btn").firstChild.textContent = "📷 Přidat další fotku"; $("btn").classList.add("dalsi"); $("pop").style.display = "none";
+    $("ok").style.display = "block";
+    mirai("Super, fotka je u mě. Na počítači už ji vidíš. Chceš přidat další?");
+  } catch (e) { mirai("Poslat se to nepovedlo: " + e.message + " Zkus to znovu.", true); }
+  $("btn").classList.remove("vyp");
+};
+start();
+</script>
+</body></html>
